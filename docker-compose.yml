@@ -1,0 +1,55 @@
+version: "3"
+
+services:
+  nginx:
+    container_name: nginx
+    image: cmtt-ru/nginx
+    build: ./src/nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./src:/var/www
+    command: "/bin/sh -c 'while :; do sleep 24h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    networks:
+      cmtt-ru:
+        ipv4_address: 172.25.0.101
+
+  php:
+    container_name: php
+    image: cmtt-ru/php
+    build: ./src/backend
+    restart: always
+    volumes:
+      - ./src:/var/www
+    security_opt:
+      - seccomp=unconfined
+    networks:
+      cmtt-ru:
+        ipv4_address: 172.25.0.102
+
+  mysql:
+    container_name: mysql
+    image: cmtt-ru/mysql
+    build: ./src/mysql
+    restart: always
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: root
+      MYSQL_DATABASE: cmtt-ru
+      MYSQL_USER: user
+      MYSQL_PASSWORD: 1234567890
+    ports:
+      - "3306:3306"
+    volumes:
+      - ./mysql-data:/var/lib/mysql
+    networks:
+      cmtt-ru:
+        ipv4_address: 172.25.0.103
+
+networks:
+  cmtt-ru:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/24
